@@ -1,28 +1,34 @@
 {
   "name": "mongo-message",
   "version": "0.0.1",
-  "description": "Using mongo to as message queue",
-  "main": "index.js",
+  "description": "Using mongo as message queue",
+  "main": "lib/index.js",
+  "jsnext:main": "lib/index.js",
   "scripts": {
-    "test": "babel-tap --timeout=0 lib/*.test.js"
+    "build": "babel src --out-dir lib",
+    "test": "babel-tap --timeout=0 lib/*.test.js",
+    "prepublish": "npm run build"
   },
   "authors": [
-    "Tran Hoai Nam <tran.picom@gmail.com> (https://github.com/namtran3005)"
+    "Tran Hoai Nam <ntran.picom@gmail.com> (https://github.com/namtran3005)"
   ],
   "license": "MIT",
   "dependencies": {
+    "babel-polyfill": "^6.13.0",
+    "babel-runtime": "^6.26.0",
+    "babel-tap": "^5.0.0",
     "bluebird": "^3.4.1",
     "mongoose": "^4.11.6",
+    "tap": "^10.7.0",
     "uuid": "^3.1.0",
-    "winston": "^2.3.1",
-    "babel-tap": "^5.0.0",
-    "tap": "^10.7.0"
+    "winston": "^2.3.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-core": "^6.13.2",
     "babel-eslint": "^7.2.3",
     "babel-loader": "^6.2.5",
+    "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.13.2",
     "babel-preset-es2015-webpack": "^6.4.3",
     "babel-preset-flow": "^6.23.0",
@@ -30,13 +36,12 @@
     "babel-preset-stage-0": "^6.5.0",
     "eslint": "^4.5.0",
     "eslint-config-airbnb-base": "^11.3.1",
-    "eslint-plugin-import": "^2.7.0",
-    "flow-bin": "^0.53.1",
-    "webpack": "^2.1.0-beta.21",
-    "flow-mongoose": "^0.1.1",
-    "flow-typed": "^2.1.5",
     "eslint-config-airbnb-flow": "^1.0.2",
     "eslint-plugin-flowtype": "^2.35.0",
-    "babel-polyfill": "^6.13.0"
+    "eslint-plugin-import": "^2.7.0",
+    "flow-bin": "^0.53.1",
+    "flow-mongoose": "^0.1.1",
+    "flow-typed": "^2.1.5",
+    "webpack": "^2.1.0-beta.21"
   }
 }

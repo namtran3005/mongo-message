@@ -3,7 +3,7 @@ import tap from 'tap';
 import winston from 'winston';
 import Promise from 'bluebird';
 import uuidv1 from 'uuid/v1';
-import MongoSMQ from '../index';
+import MongoSMQ from './index';
 
 winston.level = 'debug';
 async function setup(options) {

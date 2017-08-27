@@ -5,7 +5,7 @@ import Promise from 'bluebird';
 import uuidv1 from 'uuid/v1';
 import MongoSMQ from './index';
 
-winston.level = 'debug';
+winston.level = 'info';
 async function setup(options) {
   const fixtures = await (new MongoSMQ(options)).init();
   return fixtures;

@@ -1,15 +1,22 @@
 {
   "name": "mongo-message",
   "version": "0.0.1",
-  "private": true,
+  "description": "Using mongo to as message queue",
+  "main": "index.js",
   "scripts": {
     "test": "babel-tap --timeout=0 lib/*.test.js"
   },
+  "authors": [
+    "Tran Hoai Nam <tran.picom@gmail.com> (https://github.com/namtran3005)"
+  ],
+  "license": "MIT",
   "dependencies": {
     "bluebird": "^3.4.1",
     "mongoose": "^4.11.6",
     "uuid": "^3.1.0",
-    "winston": "^2.3.1"
+    "winston": "^2.3.1",
+    "babel-tap": "^5.0.0",
+    "tap": "^10.7.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -30,8 +37,6 @@
     "flow-typed": "^2.1.5",
     "eslint-config-airbnb-flow": "^1.0.2",
     "eslint-plugin-flowtype": "^2.35.0",
-    "babel-polyfill": "^6.13.0",
-    "babel-tap": "^5.0.0",
-    "tap": "^10.7.0"
+    "babel-polyfill": "^6.13.0"
   }
 }

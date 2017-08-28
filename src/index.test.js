@@ -4,7 +4,7 @@ import Promise from 'bluebird';
 import uuidv1 from 'uuid/v1';
 import MongoSMQ from './index';
 
-winston.level = 'debug';
+winston.level = 'info';
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
 async function setup(options) {

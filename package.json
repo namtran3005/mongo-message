@@ -6,7 +6,7 @@
   "jsnext:main": "lib/index.js",
   "scripts": {
     "build": "babel src --out-dir lib",
-    "test": "babel-tap --timeout=0 lib/*.test.js",
+    "test": "./node_modules/.bin/jest src/*.test.js",
     "prepublish": "npm run build"
   },
   "authors": [
@@ -18,6 +18,7 @@
     "babel-runtime": "^6.26.0",
     "babel-tap": "^5.0.0",
     "bluebird": "^3.4.1",
+    "eslint-config-airbnb": "^15.1.0",
     "mongoose": "^4.11.6",
     "tap": "^10.7.0",
     "uuid": "^3.1.0",
@@ -27,6 +28,7 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.13.2",
     "babel-eslint": "^7.2.3",
+    "babel-jest": "^20.0.3",
     "babel-loader": "^6.2.5",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.13.2",
@@ -35,13 +37,13 @@
     "babel-preset-react": "^6.11.1",
     "babel-preset-stage-0": "^6.5.0",
     "eslint": "^4.5.0",
-    "eslint-config-airbnb-base": "^11.3.1",
     "eslint-config-airbnb-flow": "^1.0.2",
     "eslint-plugin-flowtype": "^2.35.0",
     "eslint-plugin-import": "^2.7.0",
     "flow-bin": "^0.53.1",
     "flow-mongoose": "^0.1.1",
     "flow-typed": "^2.1.5",
+    "jest": "^20.0.4",
     "webpack": "^2.1.0-beta.21"
   }
 }

@@ -1,11 +1,12 @@
 /* @flow */
-import tap from 'tap';
 import winston from 'winston';
 import Promise from 'bluebird';
 import uuidv1 from 'uuid/v1';
 import MongoSMQ from './index';
 
 winston.level = 'debug';
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
+
 async function setup(options) {
   const fixtures = await (new MongoSMQ(options)).init();
   return fixtures;
@@ -15,38 +16,41 @@ async function teardown(fixtures) {
   return fixtures.deinit();
 }
 
-tap.test('Initiate new MongoSMQ instance', async (t1) => {
+test('Initiate new MongoSMQ instance', async () => {
   const mongoSQMInstance = await (new MongoSMQ()).init();
-  t1.notEqual(mongoSQMInstance.mongo, undefined, 'After init the connection should be set');
+  expect(mongoSQMInstance.mongo).not.toBeUndefined();
   mongoSQMInstance.deinit();
 });
 
-tap.test('Initiate new MongoSMQ should throw error', async (t) => {
+
+test('Initiate new MongoSMQ should throw error', async () => {
+  expect.assertions(1);
   const mongoSQMInstance = await (new MongoSMQ({ port: 27015 }));
   try {
     await mongoSQMInstance.init();
   } catch (e) {
-    return t.pass('it throw an error');
+    return expect(e).toMatchObject({name: 'MongoError'});
   }
   mongoSQMInstance.deinit();
-  return t.fail('it not throw an error');
 });
 
-tap.test('createMessage method should create new Message', async (t) => {
+
+test('createMessage method should create new Message', async () => {
   const mongoSQMInstance = await setup();
   const objMsg = {
     a: 'b',
     c: 'd',
   };
   const objCreatedMsg = await mongoSQMInstance.createMessage(objMsg);
-  t.match(objCreatedMsg.message, objMsg, 'Created message should match');
+  expect(objCreatedMsg.message).toMatchObject(objMsg);
   winston.debug('objCreatedMsg %j', objCreatedMsg);
   const objDeletedMsg = await mongoSQMInstance.removeMessageById(objCreatedMsg);
   winston.debug('objDeletedMsg %j', objDeletedMsg);
   await teardown(mongoSQMInstance);
 });
 
-tap.test('getMessage method should get some message', async (t) => {
+
+test('getMessage method should get some message', async () => {
   const testTime : number = 10;
   const mongoSQMInstance = await setup();
   const arrMsg = [];
@@ -88,16 +92,13 @@ tap.test('getMessage method should get some message', async (t) => {
   arrDeletedMsg = await Promise.all(arrPromiseDeletedMsg);
   winston.debug('arrDeletedMsg %j', arrDeletedMsg);
 
-  if (arrDeletedMsg.length === testTime) {
-    t.pass('It get all message correctly');
-  } else {
-    t.fail('it got some problem', arrCheck);
-  }
+  expect(arrDeletedMsg.length).toBe(testTime);
 
   await teardown(mongoSQMInstance);
 });
 
-tap.test('getMessage should make messages invisible', async (t) => {
+
+test('getMessage should make messages invisible', async () => {
   const testTime : number = 10;
   const mongoSQMInstance = await setup({
     visibility: 10,
@@ -124,10 +125,11 @@ tap.test('getMessage should make messages invisible', async (t) => {
   arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg);
   winston.debug('arrCreatedMsg %j', arrCreatedMsg);
 
+  let mockFn = null;
   const repeatIn = (ms = 30000) => {
     let countDown = ms;
     return new Promise((resolve) => {
-      const timerId = setInterval(async () => {
+      mockFn = jest.fn().mockImplementation(async () => {
         arrPromiseReceivedMsg = [];
         arrReceivedMsg = [];
         for (let i = 0; i < testTime; i += 1) {
@@ -141,10 +143,12 @@ tap.test('getMessage should make messages invisible', async (t) => {
           return;
         }
         countDown -= 2500;
-      }, 2500);
+      });
+      const timerId = setInterval(mockFn, 2500);
     });
   };
   await repeatIn();
+  expect(mockFn).toHaveBeenCalledTimes(13);
   const checkEqual = (obj, i) => arrReceivedMsg[i] && arrReceivedMsg[i].message
   && obj.a === arrReceivedMsg[i].message.a;
   for (let i = 0; i < testTime; i += 1) {
@@ -158,11 +162,8 @@ tap.test('getMessage should make messages invisible', async (t) => {
   arrDeletedMsg = await Promise.all(arrPromiseDeletedMsg);
   winston.debug('arrDeletedMsg %j', arrDeletedMsg);
 
-  if (arrDeletedMsg.length === testTime) {
-    t.pass('It get all message correctly');
-  } else {
-    t.fail('it got some problem', arrCheck);
-  }
-
+  expect(arrDeletedMsg.length).toBe(testTime);
+  
   await teardown(mongoSQMInstance);
 });
+

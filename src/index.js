@@ -70,12 +70,13 @@ export default class MongoSMQ extends EventEmitter {
       return (this: MongoSMQ);
     });
   }
+
   deinit(): Promise<Mongoose$Connection> {
     return this.mongo.close();
   }
 
   createMessage(payload: mixed) {
-    const Message = this.Message;
+    const { Message } = this;
     const newMsg = new Message({
       message: payload,
       visible: now(),

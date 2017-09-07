@@ -29,7 +29,7 @@ test('Initiate new MongoSMQ should throw error', async () => {
   try {
     await mongoSQMInstance.init();
   } catch (e) {
-    return expect(e).toMatchObject({name: 'MongoError'});
+    return expect(e).toHaveProperty('name', 'MongoError');
   }
   mongoSQMInstance.deinit();
 });

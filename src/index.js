@@ -77,7 +77,7 @@ export default class MongoSMQ extends EventEmitter {
     return this.mongo.close();
   }
 
-  createMessage(payload: mixed) {
+  createMessage(payload: mixed): Object {
     const { Message } = this;
     const newMsg = new Message({
       message: payload,

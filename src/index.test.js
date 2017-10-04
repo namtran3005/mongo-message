@@ -8,7 +8,17 @@ winston.level = 'debug';
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
 async function setup(options) {
-  const fixtures = await (new MongoSMQ(options)).init();
+  const opts = Object.assign({}, {
+    host: 'localhost',
+    db: 'abc',
+    port: 27017,
+    options: {},
+    client: null,
+    ns: 'rsmq',
+    visibility: 30,
+    colName: 'Messages',
+  }, options);
+  const fixtures = await (new MongoSMQ(opts)).init();
   return fixtures;
 }
 
@@ -97,7 +107,6 @@ test('getMessage method should get some message', async () => {
   await teardown(mongoSQMInstance);
 });
 
-
 test('getMessage should make messages invisible', async () => {
   const testTime : number = 10;
   const mongoSQMInstance = await setup({
@@ -164,6 +173,67 @@ test('getMessage should make messages invisible', async () => {
 
   expect(arrDeletedMsg.length).toBe(testTime);
   
+  await teardown(mongoSQMInstance);
+});
+
+test('total should return correct number of message', async () => {
+  const testTime : number = 10;
+  const mongoSQMInstance = await setup();
+  const arrMsg = [];
+  const arrPromiseCreatedMsg = [];
+  const arrPromiseReceivedMsg = [];
+  const arrPromiseDeletedMsg = [];
+  let arrCreatedMsg = [];
+  let arrReceivedMsg = [];
+  let arrDeletedMsg = [];
+  const arrCheck = [];
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrMsg.push({
+      a: uuidv1(),
+    });
+  }
+  winston.debug('Object will created: %j', arrMsg);
+
+  let numMessage = await mongoSQMInstance.total();
+  winston.debug('Number of Initiate Messages %j', numMessage);
+  expect(numMessage).toBe(0);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]));
+  }
+  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg);
+  winston.debug('arrCreatedMsg %j', arrCreatedMsg);
+
+  numMessage = await mongoSQMInstance.total();
+  expect(numMessage).toBe(testTime);
+  winston.debug('Number of created Messages %j', numMessage);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage());
+  }
+  arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg);
+  winston.debug('arrReceivedMsg %j', arrReceivedMsg);
+  numMessage = await mongoSQMInstance.total();
+  expect(numMessage).toBe(testTime);
+  winston.debug('Number of received Messages %j', numMessage);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrCheck.push(arrMsg.find(obj => obj.a === arrReceivedMsg[i].message.a));
+  }
+  winston.debug('arrCheck %j', arrCheck);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(arrReceivedMsg[i]));
+  }
+  arrDeletedMsg = await Promise.all(arrPromiseDeletedMsg);
+  winston.debug('arrDeletedMsg %j', arrDeletedMsg);
+  numMessage = await mongoSQMInstance.total();
+  expect(numMessage).toBe(0);
+  winston.debug('Number of messages after deleted %j', numMessage);
+
+  expect(arrDeletedMsg.length).toBe(testTime);
+
   await teardown(mongoSQMInstance);
 });
 

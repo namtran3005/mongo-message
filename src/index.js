@@ -12,6 +12,7 @@ type MongoSMQ$options = {
     client?: ?string,
     ns?: string,
     visibility?: number,
+    colName: string,
 };
 
 // some helper functions
@@ -53,12 +54,15 @@ export default class MongoSMQ extends EventEmitter {
       client: null,
       ns: 'rsmq',
       visibility: 30,
+      colName: 'SMQMessage',
     }, options);
     this.options = opts;
   }
 
   init(): Promise<MongoSMQ> {
-    const { host = '', port = '', db = '' } = this.options;
+    const {
+      host = '', port = '', db = '', colName,
+    } = this.options;
     return mongoose.connect(
       `mongodb://${host}:${port}/${db}`,
       {
@@ -67,7 +71,7 @@ export default class MongoSMQ extends EventEmitter {
     ).then((connection) => {
       if (connection) {
         this.mongo = connection;
-        this.Message = this.mongo.model('SMQMessage', MessageSchema);
+        this.Message = this.mongo.model(colName, MessageSchema);
       }
       return (this: MongoSMQ);
     });
@@ -122,4 +126,10 @@ export default class MongoSMQ extends EventEmitter {
     }
     return Message.findOneAndRemove(query).then(resp => resp);
   }
+
+  total(): Promise<number> {
+    const { Message } = this;
+    return Message.count().then(resp => resp);
+  }
+
 }

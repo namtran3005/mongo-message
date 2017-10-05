@@ -7,6 +7,14 @@ import MongoSMQ from './index';
 winston.level = 'debug';
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive)
+ * Using Math.round() will give you a non-uniform distribution!
+ */
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * ((max - min) + 1)) + min;
+}
+
 async function setup(options) {
   const opts = Object.assign({}, {
     host: 'localhost',
@@ -32,7 +40,6 @@ test('Initiate new MongoSMQ instance', async () => {
   mongoSQMInstance.deinit();
 });
 
-
 test('Initiate new MongoSMQ should throw error', async () => {
   expect.assertions(1);
   const mongoSQMInstance = await (new MongoSMQ({ port: 27015 }));
@@ -44,8 +51,7 @@ test('Initiate new MongoSMQ should throw error', async () => {
   mongoSQMInstance.deinit();
 });
 
-
-test('createMessage method should create new Message', async () => {
+test('createMessage() method should create new Message', async () => {
   const mongoSQMInstance = await setup();
   const objMsg = {
     a: 'b',
@@ -59,8 +65,7 @@ test('createMessage method should create new Message', async () => {
   await teardown(mongoSQMInstance);
 });
 
-
-test('getMessage method should get some message', async () => {
+test('getMessage() method should get some message', async () => {
   const testTime : number = 10;
   const mongoSQMInstance = await setup();
   const arrMsg = [];
@@ -107,7 +112,7 @@ test('getMessage method should get some message', async () => {
   await teardown(mongoSQMInstance);
 });
 
-test('getMessage should make messages invisible', async () => {
+test('getMessage() should make messages invisible', async () => {
   const testTime : number = 10;
   const mongoSQMInstance = await setup({
     visibility: 10,
@@ -176,7 +181,7 @@ test('getMessage should make messages invisible', async () => {
   await teardown(mongoSQMInstance);
 });
 
-test('total should return correct number of message', async () => {
+test('total() should return correct number of message', async () => {
   const testTime : number = 10;
   const mongoSQMInstance = await setup();
   const arrMsg = [];
@@ -233,6 +238,94 @@ test('total should return correct number of message', async () => {
   winston.debug('Number of messages after deleted %j', numMessage);
 
   expect(arrDeletedMsg.length).toBe(testTime);
+
+  await teardown(mongoSQMInstance);
+});
+
+test('clean() should empty the db', async () => {
+  const testTime : number = 10;
+  const mongoSQMInstance = await setup();
+  const arrMsg = [];
+  const arrPromiseCreatedMsg = [];
+  let arrCreatedMsg = [];
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrMsg.push({
+      a: uuidv1(),
+    });
+  }
+  winston.debug('Object will created: %j', arrMsg);
+
+  let numMessage = await mongoSQMInstance.total();
+  winston.debug('Number of Initiate Messages %j', numMessage);
+  expect(numMessage).toBe(0);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]));
+  }
+  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg);
+  winston.debug('arrCreatedMsg %j', arrCreatedMsg);
+
+  numMessage = await mongoSQMInstance.total();
+  expect(numMessage).toBe(testTime);
+  winston.debug('Number of created Messages %j', numMessage);
+
+  await mongoSQMInstance.clean();
+  numMessage = await mongoSQMInstance.total();
+  expect(numMessage).toBe(0);
+  winston.debug('Number of messages after clean %j', numMessage);
+
+  await teardown(mongoSQMInstance);
+});
+
+test('size() should return current available messages', async () => {
+  const testTime : number = 20;
+  const mongoSQMInstance = await setup();
+  const arrMsg = [];
+  const arrPromiseCreatedMsg = [];
+  const arrPromiseReceivedMsg = [];
+  let arrCreatedMsg = [];
+  let arrReceivedMsg = [];
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrMsg.push({
+      a: uuidv1(),
+    });
+  }
+  winston.debug('Object will created: %j', arrMsg);
+
+  let numMessage = await mongoSQMInstance.total();
+  winston.debug('Number of Initiate Messages %j', numMessage);
+  expect(numMessage).toBe(0);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]));
+  }
+  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg);
+  winston.debug('arrCreatedMsg %j', arrCreatedMsg);
+
+  const randNum = getRandomInt(1, 20);
+  for (let i = 0; i < randNum; i += 1) {
+    arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage());
+  }
+  arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg);
+  winston.debug('arrReceivedMsg %j', arrReceivedMsg.length);
+
+  const numSize = await mongoSQMInstance.size();
+  const numinFlight = await mongoSQMInstance.inFlight();
+
+  expect(numSize).toBe(testTime - randNum);
+  winston.debug('Number of size messages %j', numSize);
+
+  expect(numinFlight).toBe(randNum);
+  winston.debug('Number of inFlight messages %j', numinFlight);
+
+  expect(numSize + numinFlight).toBe(testTime);
+
+  await mongoSQMInstance.clean();
+  numMessage = await mongoSQMInstance.total();
+  expect(numMessage).toBe(0);
+  winston.debug('Number of messages after clean %j', numMessage);
 
   await teardown(mongoSQMInstance);
 });

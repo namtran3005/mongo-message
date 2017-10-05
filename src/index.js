@@ -132,4 +132,25 @@ export default class MongoSMQ extends EventEmitter {
     return Message.count().then(resp => resp);
   }
 
+  size(): Promise<number> {
+    const { Message } = this;
+    const query = {
+      visible: { $lte: now() },
+    };
+    return Message.count(query).then(resp => resp);
+  }
+
+  inFlight(): Promise<number> {
+    const { Message } = this;
+    const query = {
+      ack: { $exists: true },
+      visible: { $gt: now() },
+    };
+    return Message.count(query).then(resp => resp);
+  }
+
+  clean() {
+    const { Message } = this;
+    return Message.deleteMany().then(resp => resp);
+  }
 }

@@ -92,7 +92,8 @@ export default class MongoSMQ extends EventEmitter {
 
   getMessage(payload: mixed, opts: {visibility: number}): ?Promise<Object> {
     const { Message } = this;
-    const visibility = (opts && opts.visibility) || this.options.visibility;
+    const visibility = (opts && opts.visibility !== undefined) ?
+      opts.visibility : this.options.visibility;
     const query = {
       deleted: null,
       visible: { $lte: now() },
@@ -109,6 +110,22 @@ export default class MongoSMQ extends EventEmitter {
       },
     };
     return Message.findOneAndUpdate(query, update, { sort, new: true }).then(resp => resp);
+  }
+
+  updateMessage(payload: mixed): ?Promise<Object> {
+    const { Message } = this;
+    const { _id, ack, tries, message: {result} } = payload;
+    const query = {
+      _id,
+      ack,
+      tries,
+    };
+    const update = {
+      $set: {
+        'message.result': result
+      },
+    };
+    return Message.findOneAndUpdate(query, update, { new: true }).then(resp => resp);
   }
 
   removeMessageById({ _id, ack }: { _id: string, ack: ?string }): Promise<any> {

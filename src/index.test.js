@@ -7,6 +7,21 @@ import MongoSMQ from './index';
 winston.level = 'debug';
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 
+const repeatIn = (ms: number, interval: number, cb: Function) => {
+  let countDown = ms;
+  return new Promise((resolve) => {
+    const timerId = setInterval(async () => {
+      if (countDown === 0) {
+        clearTimeout(timerId);
+        resolve();
+        return;
+      }
+      await cb();
+      countDown -= interval;
+    }, interval);
+  });
+};
+
 /**
  * Returns a random integer between min (inclusive) and max (inclusive)
  * Using Math.round() will give you a non-uniform distribution!
@@ -327,6 +342,59 @@ test('size() should return current available messages', async () => {
   expect(numMessage).toBe(0);
   winston.debug('Number of messages after clean %j', numMessage);
 
+  await teardown(mongoSQMInstance);
+});
+
+test('updateMessage() should update the message correctly', async () => {
+  const testTime : number = 20;
+  const mongoSQMInstance = await setup();
+  const arrMsg = [];
+  const arrPromiseCreatedMsg = [];
+  let arrPromiseUpdatedMsg = [];
+  let arrPromiseReceivedMsg = [];
+  let arrCreatedMsg = [];
+  let arrUpdatedMsg = [];
+  let arrReceivedMsg = [];
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrMsg.push({
+      a: uuidv1(),
+    });
+  }
+  winston.debug('Object will created: %j', arrMsg);
+
+  for (let i = 0; i < testTime; i += 1) {
+    arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]));
+  }
+  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg);
+  winston.debug('arrCreatedMsg %j', arrCreatedMsg);
+
+  for (let numTest = 0; numTest < 3; numTest += 1) {
+    arrPromiseReceivedMsg = [];
+    arrPromiseUpdatedMsg = [];
+    for (let i = 0; i < testTime; i += 1) {
+      arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage({}, { visibility: 5 }));
+    }
+    arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg);
+    winston.debug('arrReceivedMsg %j', arrReceivedMsg);
+
+    for (let j = 0; j < testTime; j += 1) {
+      arrReceivedMsg[j].message.result = j;
+      arrPromiseUpdatedMsg.push(mongoSQMInstance.updateMessage(arrReceivedMsg[j]));
+    }
+    arrUpdatedMsg = await Promise.all(arrPromiseUpdatedMsg);
+    winston.debug('arrUpdatedMsg %j', arrUpdatedMsg);
+
+    /* sleep some time for message available again */
+    await repeatIn(5000, 1000, () => {});
+  }
+
+  for (let i = 0; i < testTime; i += 1) {
+    expect(arrUpdatedMsg[i].message.result).toBe(i);
+    expect(arrUpdatedMsg[i].tries).toBe(3);
+  }
+
+  await mongoSQMInstance.clean();
   await teardown(mongoSQMInstance);
 });
 

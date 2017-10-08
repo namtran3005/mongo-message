@@ -394,8 +394,8 @@ declare class Mongoose$ValidationError extends Mongoose$MongooseError {
 }
 
 declare class Mongoose {
-  mongodb: Object; //mongodb
-  mquery: Object; //mquery
+  mongodb: Object; // mongodb
+  mquery: Object; // mquery
   Mongoose: Class<Mongoose>;
   Aggregate: Class<Mongoose$Aggregate>;
   Collection: Class<Mongoose$Collection>;

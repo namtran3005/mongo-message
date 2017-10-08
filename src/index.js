@@ -1,8 +1,8 @@
 /* @flow */
-import Promise from 'bluebird';
-import mongoose from 'mongoose';
-import EventEmitter from 'events';
-import crypto from 'crypto';
+import Promise from 'bluebird'
+import mongoose from 'mongoose'
+import EventEmitter from 'events'
+import crypto from 'crypto'
 
 type MongoSMQ$options = {
     host?: string,
@@ -16,36 +16,36 @@ type MongoSMQ$options = {
 };
 
 // some helper functions
-function id() {
-  return crypto.randomBytes(16).toString('hex');
+function id () {
+  return crypto.randomBytes(16).toString('hex')
 }
 
-function now() {
-  return (new Date()).toISOString();
+function now () {
+  return (new Date()).toISOString()
 }
 
-function nowPlusSecs(secs: number) {
-  return (new Date(Date.now() + (secs * 1000))).toISOString();
+function nowPlusSecs (secs: number) {
+  return (new Date(Date.now() + (secs * 1000))).toISOString()
 }
 
-mongoose.Promise = Promise;
+mongoose.Promise = Promise
 
-const { Schema } = mongoose;
+const { Schema } = mongoose
 const MessageSchema = new Schema({
   message: Schema.Types.Mixed,
   visible: Schema.Types.Date,
   ack: Schema.Types.String,
-  tries: Schema.Types.Number,
+  tries: Schema.Types.Number
 }, {
-  timestamps: true,
-});
+  timestamps: true
+})
 export default class MongoSMQ extends EventEmitter {
   options: MongoSMQ$options;
   mongo: Mongoose$Connection;
   Message: Class<Mongoose$Model>;
 
-  constructor(options: MongoSMQ$options = {}) {
-    super();
+  constructor (options: MongoSMQ$options = {}) {
+    super()
     const opts = Object.assign({}, {
       host: 'localhost',
       db: 'mongoSMQ',
@@ -54,120 +54,120 @@ export default class MongoSMQ extends EventEmitter {
       client: null,
       ns: 'rsmq',
       visibility: 30,
-      colName: 'SMQMessage',
-    }, options);
-    this.options = opts;
+      colName: 'SMQMessage'
+    }, options)
+    this.options = opts
   }
 
-  init(): Promise<MongoSMQ> {
+  init (): Promise<MongoSMQ> {
     const {
-      host = '', port = '', db = '', colName,
-    } = this.options;
+      host = '', port = '', db = '', colName
+    } = this.options
     return mongoose.connect(
       `mongodb://${host}:${port}/${db}`,
       {
-        useMongoClient: true,
-      },
+        useMongoClient: true
+      }
     ).then((connection) => {
       if (connection) {
-        this.mongo = connection;
-        this.Message = this.mongo.model(colName, MessageSchema);
+        this.mongo = connection
+        this.Message = this.mongo.model(colName, MessageSchema)
       }
-      return (this: MongoSMQ);
-    });
+      return (this: MongoSMQ)
+    })
   }
 
-  deinit(): Promise<Mongoose$Connection> {
-    return this.mongo.close();
+  deinit (): Promise<Mongoose$Connection> {
+    return this.mongo.close()
   }
 
-  createMessage(payload: mixed): Object {
-    const { Message } = this;
+  createMessage (payload: mixed): Object {
+    const { Message } = this
     const newMsg = new Message({
       message: payload,
-      visible: now(),
-    });
-    return newMsg.save().then(obj => obj);
+      visible: now()
+    })
+    return newMsg.save().then(obj => obj)
   }
 
-  getMessage(payload: mixed, opts: {visibility: number}): ?Promise<Object> {
-    const { Message } = this;
-    const visibility = (opts && opts.visibility !== undefined) ?
-      opts.visibility : this.options.visibility;
+  getMessage (payload: mixed, opts: {visibility: number}): ?Promise<Object> {
+    const { Message } = this
+    const visibility = (opts && opts.visibility !== undefined)
+      ? opts.visibility : this.options.visibility
     const query = {
       deleted: null,
-      visible: { $lte: now() },
-    };
+      visible: { $lte: now() }
+    }
     const sort = {
       _id: 1,
-      visible: 1,
-    };
+      visible: 1
+    }
     const update = {
       $inc: { tries: 1 },
       $set: {
         ack: id(),
-        visible: nowPlusSecs(visibility || 0),
-      },
-    };
-    return Message.findOneAndUpdate(query, update, { sort, new: true }).then(resp => resp);
+        visible: nowPlusSecs(visibility || 0)
+      }
+    }
+    return Message.findOneAndUpdate(query, update, { sort, new: true }).then(resp => resp)
   }
 
-  updateMessage(payload: mixed): ?Promise<Object> {
-    const { Message } = this;
-    const { _id, ack, tries, message: {result} } = payload;
+  updateMessage (payload: mixed): ?Promise<Object> {
+    const { Message } = this
+    const { _id, ack, tries, message: {result} } = payload
     const query = {
       _id,
       ack,
-      tries,
-    };
+      tries
+    }
     const update = {
       $set: {
         'message.result': result
-      },
-    };
-    return Message.findOneAndUpdate(query, update, { new: true }).then(resp => resp);
+      }
+    }
+    return Message.findOneAndUpdate(query, update, { new: true }).then(resp => resp)
   }
 
-  removeMessageById({ _id, ack }: { _id: string, ack: ?string }): Promise<any> {
-    const { Message } = this;
+  removeMessageById ({ _id, ack }: { _id: string, ack: ?string }): Promise<any> {
+    const { Message } = this
     const query = {
       _id,
-      ack,
-    };
+      ack
+    }
     /* For ack value,
     ** If it null we mean we looking for object with ack property is null or not exist
     ** If it undefined we mean we don't care about value of ack when find
     */
     if (ack === undefined) {
-      delete query.ack;
+      delete query.ack
     }
-    return Message.findOneAndRemove(query).then(resp => resp);
+    return Message.findOneAndRemove(query).then(resp => resp)
   }
 
-  total(): Promise<number> {
-    const { Message } = this;
-    return Message.count().then(resp => resp);
+  total (): Promise<number> {
+    const { Message } = this
+    return Message.count().then(resp => resp)
   }
 
-  size(): Promise<number> {
-    const { Message } = this;
+  size (): Promise<number> {
+    const { Message } = this
     const query = {
-      visible: { $lte: now() },
-    };
-    return Message.count(query).then(resp => resp);
+      visible: { $lte: now() }
+    }
+    return Message.count(query).then(resp => resp)
   }
 
-  inFlight(): Promise<number> {
-    const { Message } = this;
+  inFlight (): Promise<number> {
+    const { Message } = this
     const query = {
       ack: { $exists: true },
-      visible: { $gt: now() },
-    };
-    return Message.count(query).then(resp => resp);
+      visible: { $gt: now() }
+    }
+    return Message.count(query).then(resp => resp)
   }
 
-  clean() {
-    const { Message } = this;
-    return Message.deleteMany().then(resp => resp);
+  clean () {
+    const { Message } = this
+    return Message.deleteMany().then(resp => resp)
   }
 }

@@ -4,6 +4,7 @@ build
 node_modules
 stats.json  
 lib
+flow-typed
 
 # Cruft
 .DS_Store

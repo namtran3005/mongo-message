@@ -1,6 +1,6 @@
 /* @flow */
 import winston from 'winston'
-import Promise from 'bluebird'
+import BPromise from 'bluebird'
 import uuidv1 from 'uuid/v1'
 import MongoSMQ from './index'
 
@@ -9,7 +9,7 @@ jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000
 
 const repeatIn = (ms: number, interval: number, cb: Function) => {
   let countDown = ms
-  return new Promise((resolve) => {
+  return new BPromise((resolve) => {
     const timerId = setInterval(async () => {
       if (countDown === 0) {
         clearTimeout(timerId)
@@ -29,6 +29,7 @@ const repeatIn = (ms: number, interval: number, cb: Function) => {
 function getRandomInt (min, max) {
   return Math.floor(Math.random() * ((max - min) + 1)) + min
 }
+
 
 async function setup (options) {
   const opts = Object.assign({}, {
@@ -72,12 +73,21 @@ test('createMessage() method should create new Message', async () => {
     a: 'b',
     c: 'd'
   }
-  const objCreatedMsg = await mongoSQMInstance.createMessage(objMsg)
-  expect(objCreatedMsg.message).toMatchObject(objMsg)
-  winston.debug('objCreatedMsg %j', objCreatedMsg)
-  const objDeletedMsg = await mongoSQMInstance.removeMessageById(objCreatedMsg)
-  winston.debug('objDeletedMsg %j', objDeletedMsg)
-  await teardown(mongoSQMInstance)
+  const deleteQuery = {}
+  const objCreatedMsg: mixed = await mongoSQMInstance.createMessage(objMsg)
+  if (objCreatedMsg) {
+    if (objCreatedMsg.message) {
+      expect(objCreatedMsg.message).toMatchObject(objMsg)
+    }
+    if (objCreatedMsg._id && typeof objCreatedMsg._id === 'object') {
+      deleteQuery._id = objCreatedMsg._id.toString()
+    }
+    if (objCreatedMsg.ack && typeof objCreatedMsg.ack === 'string') {
+      deleteQuery.ack = objCreatedMsg.ack
+    }
+    await mongoSQMInstance.removeMessageById(deleteQuery)
+    await teardown(mongoSQMInstance)
+  }
 })
 
 test('getMessage() method should get some message', async () => {
@@ -102,13 +112,13 @@ test('getMessage() method should get some message', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]))
   }
-  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg)
+  arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage())
   }
-  arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg)
+  arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
   winston.debug('arrReceivedMsg %j', arrReceivedMsg)
 
   for (let i = 0; i < testTime; i += 1) {
@@ -119,7 +129,7 @@ test('getMessage() method should get some message', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(arrReceivedMsg[i]))
   }
-  arrDeletedMsg = await Promise.all(arrPromiseDeletedMsg)
+  arrDeletedMsg = await BPromise.all(arrPromiseDeletedMsg)
   winston.debug('arrDeletedMsg %j', arrDeletedMsg)
 
   expect(arrDeletedMsg.length).toBe(testTime)
@@ -151,20 +161,20 @@ test('getMessage() should make messages invisible', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]))
   }
-  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg)
+  arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
   let mockFn = null
   const repeatIn = (ms = 30000) => {
     let countDown = ms
-    return new Promise((resolve) => {
+    return new BPromise((resolve) => {
       mockFn = jest.fn().mockImplementation(async () => {
         arrPromiseReceivedMsg = []
         arrReceivedMsg = []
         for (let i = 0; i < testTime; i += 1) {
           arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage())
         }
-        arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg)
+        arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
         winston.debug('countDown %d, arrReceivedMsg %j', countDown, arrReceivedMsg)
         if (countDown === 0) {
           clearTimeout(timerId)
@@ -188,13 +198,14 @@ test('getMessage() should make messages invisible', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(arrReceivedMsg[i]))
   }
-  arrDeletedMsg = await Promise.all(arrPromiseDeletedMsg)
+  arrDeletedMsg = await BPromise.all(arrPromiseDeletedMsg)
   winston.debug('arrDeletedMsg %j', arrDeletedMsg)
 
   expect(arrDeletedMsg.length).toBe(testTime)
 
   await teardown(mongoSQMInstance)
 })
+
 
 test('total() should return correct number of message', async () => {
   const testTime : number = 10
@@ -222,7 +233,7 @@ test('total() should return correct number of message', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]))
   }
-  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg)
+  arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
   numMessage = await mongoSQMInstance.total()
@@ -232,7 +243,7 @@ test('total() should return correct number of message', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage())
   }
-  arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg)
+  arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
   winston.debug('arrReceivedMsg %j', arrReceivedMsg)
   numMessage = await mongoSQMInstance.total()
   expect(numMessage).toBe(testTime)
@@ -246,7 +257,7 @@ test('total() should return correct number of message', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(arrReceivedMsg[i]))
   }
-  arrDeletedMsg = await Promise.all(arrPromiseDeletedMsg)
+  arrDeletedMsg = await BPromise.all(arrPromiseDeletedMsg)
   winston.debug('arrDeletedMsg %j', arrDeletedMsg)
   numMessage = await mongoSQMInstance.total()
   expect(numMessage).toBe(0)
@@ -278,7 +289,7 @@ test('clean() should empty the db', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]))
   }
-  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg)
+  arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
   numMessage = await mongoSQMInstance.total()
@@ -316,14 +327,14 @@ test('size() should return current available messages', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]))
   }
-  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg)
+  arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
   const randNum = getRandomInt(1, 20)
   for (let i = 0; i < randNum; i += 1) {
     arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage())
   }
-  arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg)
+  arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
   winston.debug('arrReceivedMsg %j', arrReceivedMsg.length)
 
   const numSize = await mongoSQMInstance.size()
@@ -366,7 +377,7 @@ test('updateMessage() should update the message correctly', async () => {
   for (let i = 0; i < testTime; i += 1) {
     arrPromiseCreatedMsg.push(mongoSQMInstance.createMessage(arrMsg[i]))
   }
-  arrCreatedMsg = await Promise.all(arrPromiseCreatedMsg)
+  arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
   for (let numTest = 0; numTest < 3; numTest += 1) {
@@ -375,14 +386,14 @@ test('updateMessage() should update the message correctly', async () => {
     for (let i = 0; i < testTime; i += 1) {
       arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage({}, { visibility: 5 }))
     }
-    arrReceivedMsg = await Promise.all(arrPromiseReceivedMsg)
+    arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
     winston.debug('arrReceivedMsg %j', arrReceivedMsg)
 
     for (let j = 0; j < testTime; j += 1) {
       arrReceivedMsg[j].message.result = j
       arrPromiseUpdatedMsg.push(mongoSQMInstance.updateMessage(arrReceivedMsg[j]))
     }
-    arrUpdatedMsg = await Promise.all(arrPromiseUpdatedMsg)
+    arrUpdatedMsg = await BPromise.all(arrPromiseUpdatedMsg)
     winston.debug('arrUpdatedMsg %j', arrUpdatedMsg)
 
     /* sleep some time for message available again */

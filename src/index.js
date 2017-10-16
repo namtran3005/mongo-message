@@ -1,5 +1,5 @@
 /* @flow */
-import Promise from 'bluebird'
+import BPromise from 'bluebird'
 import mongoose from 'mongoose'
 import EventEmitter from 'events'
 import crypto from 'crypto'
@@ -28,7 +28,7 @@ function nowPlusSecs (secs: number) {
   return (new Date(Date.now() + (secs * 1000))).toISOString()
 }
 
-mongoose.Promise = Promise
+mongoose.Promise = BPromise
 
 const { Schema } = mongoose
 const MessageSchema = new Schema({
@@ -59,38 +59,37 @@ export default class MongoSMQ extends EventEmitter {
     this.options = opts
   }
 
-  init (): Promise<MongoSMQ> {
+  async init () {
     const {
       host = '', port = '', db = '', colName
     } = this.options
-    return mongoose.connect(
+    let theConnection: Mongoose$Connection = await mongoose.connect(
       `mongodb://${host}:${port}/${db}`,
       {
         useMongoClient: true
       }
-    ).then((connection) => {
-      if (connection) {
-        this.mongo = connection
-        this.Message = this.mongo.model(colName, MessageSchema)
-      }
-      return (this: MongoSMQ)
-    })
+    )
+    if (theConnection) {
+      this.mongo = theConnection
+      this.Message = this.mongo.model(colName, MessageSchema)
+    }
+    return this
   }
 
   deinit (): Promise<Mongoose$Connection> {
     return this.mongo.close()
   }
 
-  createMessage (payload: mixed): Object {
+  createMessage (payload: mixed): Promise<mixed> {
     const { Message } = this
     const newMsg = new Message({
       message: payload,
       visible: now()
     })
-    return newMsg.save().then(obj => obj)
+    return newMsg.save()
   }
 
-  getMessage (payload: mixed, opts: {visibility: number}): ?Promise<Object> {
+  getMessage (payload?: mixed, opts?: {visibility: number}): Promise<any> {
     const { Message } = this
     const visibility = (opts && opts.visibility !== undefined)
       ? opts.visibility : this.options.visibility
@@ -109,10 +108,17 @@ export default class MongoSMQ extends EventEmitter {
         visible: nowPlusSecs(visibility || 0)
       }
     }
-    return Message.findOneAndUpdate(query, update, { sort, new: true }).then(resp => resp)
+    return Message.findOneAndUpdate(query, update, { sort, new: true }).then()
   }
 
-  updateMessage (payload: mixed): ?Promise<Object> {
+  updateMessage (payload: {
+    _id : string,
+    ack : string,
+    tries : number,
+    message : {
+      result : mixed
+    }
+  }): Promise<any> {
     const { Message } = this
     const { _id, ack, tries, message: {result} } = payload
     const query = {
@@ -125,10 +131,10 @@ export default class MongoSMQ extends EventEmitter {
         'message.result': result
       }
     }
-    return Message.findOneAndUpdate(query, update, { new: true }).then(resp => resp)
+    return Message.findOneAndUpdate(query, update, { new: true }).then()
   }
 
-  removeMessageById ({ _id, ack }: { _id: string, ack: ?string }): Promise<any> {
+  removeMessageById ({ _id, ack }: { _id: ?string, ack: ?string }): Promise<mixed> {
     const { Message } = this
     const query = {
       _id,
@@ -141,12 +147,12 @@ export default class MongoSMQ extends EventEmitter {
     if (ack === undefined) {
       delete query.ack
     }
-    return Message.findOneAndRemove(query).then(resp => resp)
+    return Message.findOneAndRemove(query).then()
   }
 
   total (): Promise<number> {
     const { Message } = this
-    return Message.count().then(resp => resp)
+    return Message.count().then()
   }
 
   size (): Promise<number> {
@@ -154,7 +160,7 @@ export default class MongoSMQ extends EventEmitter {
     const query = {
       visible: { $lte: now() }
     }
-    return Message.count(query).then(resp => resp)
+    return Message.count(query).then()
   }
 
   inFlight (): Promise<number> {
@@ -163,11 +169,11 @@ export default class MongoSMQ extends EventEmitter {
       ack: { $exists: true },
       visible: { $gt: now() }
     }
-    return Message.count(query).then(resp => resp)
+    return Message.count(query).then()
   }
 
   clean () {
     const { Message } = this
-    return Message.deleteMany().then(resp => resp)
+    return Message.deleteMany().then()
   }
 }

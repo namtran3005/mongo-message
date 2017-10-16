@@ -368,7 +368,7 @@ declare class Mongoose$Model extends events$EventEmitter {
     :Promise<Mongoose$Model>;
 
   constructor(obj: Object, fields?: Object, skipId?: boolean):void;
-  save(options?: Object, fn?: Function):Promise<void>;
+  save(options?: Object, fn?: Function):Promise<any>;
   increment():this;
   remove(options?: Object, fn?: Function):Promise<void>;
   model(name: string):Class<Mongoose$Model>;
@@ -410,7 +410,7 @@ declare class Mongoose {
   Document: Class<Mongoose$Document>;
   Error: Class<Mongoose$MongooseError>;
   CastError: Class<Mongoose$CastError>;
-  Promise: Promise<any>;
+  Promise: Class<Promise>;
 
   connection:Mongoose$Connection;
   version:string;
@@ -418,11 +418,11 @@ declare class Mongoose {
   set(key: string, value: any):this;
   get(key: string):any;
   createMongoose$Connection(uri: string, options?: Object):Mongoose$Connection;
-  connect(uri: string, options?: Object):Promise<Mongoose$Connection>;
   disconnect(fn?: Function):Promise<void>;
   model(name: string|Function, schema?: Mongoose$Schema, collection?: string, skipInit?: boolean):Class<Mongoose$Model>;
   modelNames():string[];
   plugin(fn: Function, opts: Object):this;
+  connect(uri: string, options?: Object):Promise<Mongoose$Connection>;
 
 }
 

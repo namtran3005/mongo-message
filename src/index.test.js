@@ -30,7 +30,6 @@ function getRandomInt (min, max) {
   return Math.floor(Math.random() * ((max - min) + 1)) + min
 }
 
-
 async function setup (options) {
   const opts = Object.assign({}, {
     host: 'localhost',
@@ -205,7 +204,6 @@ test('getMessage() should make messages invisible', async () => {
 
   await teardown(mongoSQMInstance)
 })
-
 
 test('total() should return correct number of message', async () => {
   const testTime : number = 10

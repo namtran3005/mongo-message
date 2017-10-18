@@ -7,7 +7,7 @@ type MongoSMQ$options = {
     host?: string,
     db?: string,
     port?: number,
-    options?: any,
+    options?: mixed,
     client?: ?string,
     ns?: string,
     visibility?: number,
@@ -83,7 +83,7 @@ export default class MongoSMQ extends EventEmitter {
     return newMsg.save()
   }
 
-  getMessage (payload: ?mixed, opts: ?{visibility: number}): Promise<any> {
+  getMessage (payload: ?mixed, opts: ?{visibility: number}): Promise<mixed> {
     const { Message } = this
     const visibility = (opts && opts.visibility !== undefined)
       ? opts.visibility : this.options.visibility
@@ -110,7 +110,7 @@ export default class MongoSMQ extends EventEmitter {
     message : {
       result : mixed
     }
-  }): Promise<any> {
+  }): Promise<mixed> {
     const { Message } = this
     const { _id, tries, message: {result} } = payload
     const query = {

@@ -81,8 +81,8 @@ test('createMessage() method should create new Message', async () => {
     if (objCreatedMsg._id && typeof objCreatedMsg._id === 'object') {
       deleteQuery._id = objCreatedMsg._id.toString()
     }
-    if (objCreatedMsg.ack && typeof objCreatedMsg.ack === 'string') {
-      deleteQuery.ack = objCreatedMsg.ack
+    if (objCreatedMsg.tries && typeof objCreatedMsg.tries === 'number') {
+      deleteQuery.tries = objCreatedMsg.tries
     }
     await mongoSQMInstance.removeMessageById(deleteQuery)
     await teardown(mongoSQMInstance)

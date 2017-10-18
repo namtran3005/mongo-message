@@ -356,6 +356,7 @@ declare class Mongoose$Model extends events$EventEmitter {
   static create(doc: Object, fn?: Function):Promise<void>;
   static create(doc: Object[], fn?: Function):Promise<void>;
   static create(...doc: Array<Object|Function>):Promise<void>;
+  static deleteMany(filter?: Object, writeConcern?: Object, collation?: Object):Promise<void>;
   static insertMany(doc: Object, fn?: Function):Promise<void>;
   static insertMany(doc: Object[], fn?: Function):Promise<void>;
   static insertMany(...doc: Array<Object|Function>):Promise<void>;

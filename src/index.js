@@ -2,7 +2,6 @@
 import BPromise from 'bluebird'
 import mongoose from 'mongoose'
 import EventEmitter from 'events'
-import crypto from 'crypto'
 
 type MongoSMQ$options = {
     host?: string,
@@ -14,11 +13,6 @@ type MongoSMQ$options = {
     visibility?: number,
     colName: string,
 };
-
-// some helper functions
-function id () {
-  return crypto.randomBytes(16).toString('hex')
-}
 
 function now () {
   return (new Date()).toISOString()
@@ -89,7 +83,7 @@ export default class MongoSMQ extends EventEmitter {
     return newMsg.save()
   }
 
-  getMessage (payload?: mixed, opts?: {visibility: number}): Promise<any> {
+  getMessage (payload: ?mixed, opts: ?{visibility: number}): Promise<any> {
     const { Message } = this
     const visibility = (opts && opts.visibility !== undefined)
       ? opts.visibility : this.options.visibility
@@ -104,7 +98,6 @@ export default class MongoSMQ extends EventEmitter {
     const update = {
       $inc: { tries: 1 },
       $set: {
-        ack: id(),
         visible: nowPlusSecs(visibility || 0)
       }
     }
@@ -113,17 +106,15 @@ export default class MongoSMQ extends EventEmitter {
 
   updateMessage (payload: {
     _id : string,
-    ack : string,
     tries : number,
     message : {
       result : mixed
     }
   }): Promise<any> {
     const { Message } = this
-    const { _id, ack, tries, message: {result} } = payload
+    const { _id, tries, message: {result} } = payload
     const query = {
       _id,
-      ack,
       tries
     }
     const update = {
@@ -134,18 +125,18 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndUpdate(query, update, { new: true }).then()
   }
 
-  removeMessageById ({ _id, ack }: { _id: ?string, ack: ?string }): Promise<mixed> {
+  removeMessageById ({ _id, tries }: { _id: ?string, tries: ?number }): Promise<mixed> {
     const { Message } = this
     const query = {
       _id,
-      ack
+      tries
     }
-    /* For ack value,
-    ** If it null we mean we looking for object with ack property is null or not exist
-    ** If it undefined we mean we don't care about value of ack when find
+    /* For tries value,
+    ** If it null we mean we looking for object with tries property is null or not exist
+    ** If it undefined we mean we don't care about value of tries when find
     */
-    if (ack === undefined) {
-      delete query.ack
+    if (tries === undefined) {
+      delete query.tries
     }
     return Message.findOneAndRemove(query).then()
   }
@@ -166,13 +157,13 @@ export default class MongoSMQ extends EventEmitter {
   inFlight (): Promise<number> {
     const { Message } = this
     const query = {
-      ack: { $exists: true },
+      tries: { $exists: true },
       visible: { $gt: now() }
     }
     return Message.count(query).then()
   }
 
-  clean () {
+  clean (): Promise<{ "acknowledged" : boolean, "deletedCount" : number }> {
     const { Message } = this
     return Message.deleteMany().then()
   }

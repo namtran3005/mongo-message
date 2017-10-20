@@ -7,9 +7,9 @@ import MongoSMQ from './index'
 winston.level = 'debug'
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000
 
-const repeatIn = (ms: number, interval: number, cb: Function) => {
+export const repeatIn = (ms: number, interval: number, cb: Function) => {
   let countDown = ms
-  return new BPromise((resolve) => {
+  return new Promise((resolve) => {
     const timerId = setInterval(async () => {
       if (countDown === 0) {
         clearTimeout(timerId)
@@ -73,7 +73,7 @@ test('createMessage() method should create new Message', async () => {
     c: 'd'
   }
   const deleteQuery = {}
-  const objCreatedMsg: mixed = await mongoSQMInstance.createMessage(objMsg)
+  const objCreatedMsg = await mongoSQMInstance.createMessage(objMsg)
   if (objCreatedMsg) {
     if (objCreatedMsg.message) {
       expect(objCreatedMsg.message).toMatchObject(objMsg)
@@ -126,13 +126,17 @@ test('getMessage() method should get some message', async () => {
   winston.debug('arrCheck %j', arrCheck)
 
   for (let i = 0; i < testTime; i += 1) {
-    arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(arrReceivedMsg[i]))
+    arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(
+      {
+        _id: arrReceivedMsg[i]._id.toString(),
+        tries: arrReceivedMsg[i].tries
+      }
+    ))
   }
   arrDeletedMsg = await BPromise.all(arrPromiseDeletedMsg)
   winston.debug('arrDeletedMsg %j', arrDeletedMsg)
 
   expect(arrDeletedMsg.length).toBe(testTime)
-
   await teardown(mongoSQMInstance)
 })
 
@@ -163,29 +167,16 @@ test('getMessage() should make messages invisible', async () => {
   arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg)
   winston.debug('arrCreatedMsg %j', arrCreatedMsg)
 
-  let mockFn = null
-  const repeatIn = (ms = 30000) => {
-    let countDown = ms
-    return new BPromise((resolve) => {
-      mockFn = jest.fn().mockImplementation(async () => {
-        arrPromiseReceivedMsg = []
-        arrReceivedMsg = []
-        for (let i = 0; i < testTime; i += 1) {
-          arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage())
-        }
-        arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
-        winston.debug('countDown %d, arrReceivedMsg %j', countDown, arrReceivedMsg)
-        if (countDown === 0) {
-          clearTimeout(timerId)
-          resolve()
-          return
-        }
-        countDown -= 2500
-      })
-      const timerId = setInterval(mockFn, 2500)
-    })
-  }
-  await repeatIn()
+  let mockFn = jest.fn().mockImplementation(async () => {
+    arrPromiseReceivedMsg = []
+    arrReceivedMsg = []
+    for (let i = 0; i < testTime; i += 1) {
+      arrPromiseReceivedMsg.push(mongoSQMInstance.getMessage())
+    }
+    arrReceivedMsg = await BPromise.all(arrPromiseReceivedMsg)
+    winston.debug(' arrReceivedMsg %j', arrReceivedMsg)
+  })
+  await repeatIn(32500, 2500, mockFn)
   expect(mockFn).toHaveBeenCalledTimes(13)
   const checkEqual = (obj, i) => arrReceivedMsg[i] && arrReceivedMsg[i].message &&
   obj.a === arrReceivedMsg[i].message.a
@@ -201,7 +192,6 @@ test('getMessage() should make messages invisible', async () => {
   winston.debug('arrDeletedMsg %j', arrDeletedMsg)
 
   expect(arrDeletedMsg.length).toBe(testTime)
-
   await teardown(mongoSQMInstance)
 })
 
@@ -253,7 +243,10 @@ test('total() should return correct number of message', async () => {
   winston.debug('arrCheck %j', arrCheck)
 
   for (let i = 0; i < testTime; i += 1) {
-    arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById(arrReceivedMsg[i]))
+    arrPromiseDeletedMsg.push(mongoSQMInstance.removeMessageById({
+      _id: arrReceivedMsg[i]._id.toString(),
+      tries: arrReceivedMsg[i].tries
+    }))
   }
   arrDeletedMsg = await BPromise.all(arrPromiseDeletedMsg)
   winston.debug('arrDeletedMsg %j', arrDeletedMsg)
@@ -389,7 +382,11 @@ test('updateMessage() should update the message correctly', async () => {
 
     for (let j = 0; j < testTime; j += 1) {
       arrReceivedMsg[j].message.result = j
-      arrPromiseUpdatedMsg.push(mongoSQMInstance.updateMessage(arrReceivedMsg[j]))
+      arrPromiseUpdatedMsg.push(mongoSQMInstance.updateMessage({
+        _id: arrReceivedMsg[j]._id.toString(),
+        tries: arrReceivedMsg[j].tries,
+        message: arrReceivedMsg[j].message
+      }))
     }
     arrUpdatedMsg = await BPromise.all(arrPromiseUpdatedMsg)
     winston.debug('arrUpdatedMsg %j', arrUpdatedMsg)

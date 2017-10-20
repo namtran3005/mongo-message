@@ -1,5 +1,4 @@
 /* @flow */
-import BPromise from 'bluebird'
 import mongoose from 'mongoose'
 import EventEmitter from 'events'
 
@@ -14,6 +13,13 @@ type MongoSMQ$options = {
     colName: string,
 };
 
+type MongoSMQ$message = {
+  _id : Object,
+  tries : ?number,
+  message : any,
+  visible : ?Object
+};
+
 function now () {
   return (new Date()).toISOString()
 }
@@ -21,8 +27,6 @@ function now () {
 function nowPlusSecs (secs: number) {
   return (new Date(Date.now() + (secs * 1000))).toISOString()
 }
-
-mongoose.Promise = BPromise
 
 const { Schema } = mongoose
 const MessageSchema = new Schema({
@@ -74,7 +78,7 @@ export default class MongoSMQ extends EventEmitter {
     return this.mongo.close()
   }
 
-  createMessage (payload: mixed): Promise<mixed> {
+  createMessage (payload: mixed): Promise<MongoSMQ$message> {
     const { Message } = this
     const newMsg = new Message({
       message: payload,
@@ -83,7 +87,7 @@ export default class MongoSMQ extends EventEmitter {
     return newMsg.save()
   }
 
-  getMessage (payload: ?mixed, opts: ?{visibility: number}): Promise<mixed> {
+  getMessage (payload: ?mixed, opts: ?{visibility: number}): Promise<MongoSMQ$message> {
     const { Message } = this
     const visibility = (opts && opts.visibility !== undefined)
       ? opts.visibility : this.options.visibility
@@ -104,13 +108,7 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndUpdate(query, update, { sort, new: true }).then()
   }
 
-  updateMessage (payload: {
-    _id : string,
-    tries : number,
-    message : {
-      result : mixed
-    }
-  }): Promise<mixed> {
+  updateMessage (payload: MongoSMQ$message): Promise<MongoSMQ$message> {
     const { Message } = this
     const { _id, tries, message: {result} } = payload
     const query = {
@@ -125,7 +123,7 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndUpdate(query, update, { new: true }).then()
   }
 
-  removeMessageById ({ _id, tries }: { _id: ?string, tries: ?number }): Promise<mixed> {
+  removeMessageById ({ _id, tries }: { _id: string, tries: ?number }): Promise<mixed> {
     const { Message } = this
     const query = {
       _id,

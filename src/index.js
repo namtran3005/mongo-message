@@ -93,14 +93,13 @@ export default class MongoSMQ extends EventEmitter {
     return newMsg.save()
   }
 
-  getMessage (payload: ?mixed, opts: ?{visibility: number}): Promise<MongoSMQ$message> {
+  getMessage (payload: any, opts: ?{visibility: number}): Promise<MongoSMQ$message> {
     const { Message } = this
     const visibility = (opts && opts.visibility !== undefined)
       ? opts.visibility : this.options.visibility
-    const query = {
-      deleted: null,
+    const query = Object.assign({
       visible: { $lte: now() }
-    }
+    }, payload)
     const sort = {
       _id: 1,
       visible: 1

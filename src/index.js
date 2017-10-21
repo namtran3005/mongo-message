@@ -20,6 +20,12 @@ type MongoSMQ$message = {
   visible : ?Object
 };
 
+type MongoSMQ$updatePayload = {
+  _id : string,
+  tries : ?number,
+  message : any
+};
+
 function now () {
   return (new Date()).toISOString()
 }
@@ -108,7 +114,7 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndUpdate(query, update, { sort, new: true }).then()
   }
 
-  updateMessage (payload: MongoSMQ$message): Promise<MongoSMQ$message> {
+  updateMessage (payload: MongoSMQ$updatePayload): Promise<MongoSMQ$message> {
     const { Message } = this
     const { _id, tries, message: {result} } = payload
     const query = {

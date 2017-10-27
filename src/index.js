@@ -1,6 +1,9 @@
 /* @flow */
+import BPromise from 'bluebird'
 import mongoose from 'mongoose'
 import EventEmitter from 'events'
+
+mongoose.Promise = BPromise
 
 type MongoSMQ$options = {
     host?: string,

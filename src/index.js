@@ -70,7 +70,7 @@ export default class MongoSMQ extends EventEmitter {
     const {
       host = '', port = '', db = '', colName
     } = this.options
-    let theConnection: Mongoose$Connection = await mongoose.connect(
+    let theConnection: Mongoose$Connection = await mongoose.createConnection(
       `mongodb://${host}:${port}/${db}`,
       {
         useMongoClient: true

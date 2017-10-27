@@ -55,15 +55,13 @@ test('Initiate new MongoSMQ instance', async () => {
   mongoSQMInstance.deinit()
 })
 
-test('Initiate new MongoSMQ should throw error', async () => {
-  expect.assertions(1)
-  const mongoSQMInstance = await (new MongoSMQ({ port: 27015 }))
+test('Initiate new MongoSMQ should throw error', async (done) => {
   try {
-    await mongoSQMInstance.init()
+    await (new MongoSMQ({ port: 27015 })).init()
   } catch (e) {
-    return expect(e).toHaveProperty('name', 'MongoError')
+    expect(e.name).toBe('MongoError')
+    done()
   }
-  mongoSQMInstance.deinit()
 })
 
 test('createMessage() method should create new Message', async () => {
@@ -392,6 +390,7 @@ test('updateMessage() should update the message correctly', async () => {
     winston.debug('arrUpdatedMsg %j', arrUpdatedMsg)
 
     /* sleep some time for message available again */
+
     await repeatIn(5000, 1000, () => {})
   }
 

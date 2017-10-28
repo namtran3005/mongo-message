@@ -382,8 +382,11 @@ test('updateMessage() should update the message correctly', async () => {
       arrReceivedMsg[j].message.result = j
       arrPromiseUpdatedMsg.push(mongoSQMInstance.updateMessage({
         _id: arrReceivedMsg[j]._id.toString(),
-        tries: arrReceivedMsg[j].tries,
-        message: arrReceivedMsg[j].message
+        tries: arrReceivedMsg[j].tries
+      }, {
+        $set: {
+          'message.result': arrReceivedMsg[j].message.result
+        }
       }))
     }
     arrUpdatedMsg = await BPromise.all(arrPromiseUpdatedMsg)

@@ -116,22 +116,13 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndUpdate(query, update, { sort, new: true }).then()
   }
 
-  updateMessage (payload: MongoSMQ$updatePayload): Promise<MongoSMQ$message> {
+  updateMessage (query: {_id : string, tries? : ?number},
+    update: any): Promise<MongoSMQ$message> {
     const { Message } = this
-    const { _id, tries, message: {result} } = payload
-    const query = {
-      _id,
-      tries
-    }
-    const update = {
-      $set: {
-        'message.result': result
-      }
-    }
     return Message.findOneAndUpdate(query, update, { new: true }).then()
   }
 
-  removeMessageById ({ _id, tries }: { _id: string, tries: ?number }): Promise<mixed> {
+  removeMessageById ({ _id, tries }: { _id: string, tries?: ?number }): Promise<mixed> {
     const { Message } = this
     const query = {
       _id,

@@ -1,4 +1,3 @@
-/* @flow */
 import * as BPromise from "bluebird";
 import * as uuid from "uuid";
 import * as winston from "winston";

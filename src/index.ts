@@ -138,12 +138,12 @@ export default class MongoSMQ {
     return Message.findOneAndRemove(query).then();
   }
 
-  public total(): Promise<{}> {
+  public total(): Promise<number> {
     const { Message } = this;
     return Message.count({}).then();
   }
 
-  public size(): Promise<{}> {
+  public size(): Promise<number> {
     const { Message } = this;
     const query = {
       visible: { $lte: now() },
@@ -151,7 +151,7 @@ export default class MongoSMQ {
     return Message.count(query).then();
   }
 
-  public inFlight(): Promise<{}> {
+  public inFlight(): Promise<number> {
     const { Message } = this;
     const query = {
       tries: { $exists: true },

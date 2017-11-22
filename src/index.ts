@@ -15,7 +15,7 @@ export interface IMongoSMQ$options {
 }
 
 export interface IDocumentMessage extends mongoose.Document {
-  _id: {};
+  _id: any;
   tries?: number;
   message: any;
   visible: any;

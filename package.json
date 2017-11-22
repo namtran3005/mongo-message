@@ -6,10 +6,9 @@
   "main": "dist/index",
   "types": "dist/index",
   "scripts": {
-    "build": "babel src --out-dir lib && ./node_modules/.bin/flow-copy-source src lib",
-    "buildts": "./node_modules/.bin/tsc",
+    "build": "./node_modules/.bin/tsc",
     "test": "./node_modules/.bin/jest --coverage src/*.test.ts",
-    "prepublish": "npm run buildts"
+    "prepublish": "npm run build"
   },
   "authors": [
     "Tran Hoai Nam <ntran.picom@gmail.com> (https://github.com/namtran3005)"

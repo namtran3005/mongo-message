@@ -1,6 +1,6 @@
 {
   "name": "mongo-message",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Using mongo as message queue",
   "jsnext:main": "dist/index",
   "main": "dist/index",

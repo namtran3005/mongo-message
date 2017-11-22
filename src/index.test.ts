@@ -8,7 +8,7 @@ import MongoSMQ from "./index";
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000;
 const uuidv1 = uuid.v1;
 
-export const repeatIn = (ms: number, interval: number, cb: Function) => {
+export const repeatIn = (ms: number, interval: number, cb: (() => void)) => {
   let countDown = ms;
   return new Promise((resolve) => {
     const timerId = setInterval(async () => {
@@ -33,14 +33,14 @@ function getRandomInt(min, max) {
 
 async function setup(options?: any) {
   const opts = Object.assign({}, {
-    db: "abc",
-    options: {},
-    host: "localhost",
-    port: 27017,
     client: null,
-    ns: "rsmq",
-    visibility: 30,
     colName: "Messages",
+    db: "abc",
+    host: "localhost",
+    ns: "rsmq",
+    options: {},
+    port: 27017,
+    visibility: 30,
   }, options);
   const fixtures = await (new MongoSMQ(opts)).init();
   return fixtures;
@@ -86,7 +86,7 @@ test("createMessage() method should create new Message", async () => {
     await mongoSQMInstance.removeMessageById(deleteQuery);
     await teardown(mongoSQMInstance);
   }
-})
+});
 
 test("getMessage() method should get some message", async () => {
   const testTime: number = 10;
@@ -120,7 +120,7 @@ test("getMessage() method should get some message", async () => {
   winston.debug("arrReceivedMsg %j", arrReceivedMsg);
 
   for (let i = 0; i < testTime; i += 1) {
-    arrCheck.push(arrMsg.find(obj => obj.a === arrReceivedMsg[i].message.a));
+    arrCheck.push(arrMsg.find((obj) => obj.a === arrReceivedMsg[i].message.a));
   }
   winston.debug("arrCheck %j", arrCheck);
 
@@ -129,7 +129,7 @@ test("getMessage() method should get some message", async () => {
       {
         _id: arrReceivedMsg[i]._id.toString(),
         tries: arrReceivedMsg[i].tries,
-      }
+      },
     ));
   }
   arrDeletedMsg = await BPromise.all(arrPromiseDeletedMsg);
@@ -166,7 +166,7 @@ test("getMessage() should make messages invisible", async () => {
   arrCreatedMsg = await BPromise.all(arrPromiseCreatedMsg);
   winston.debug("arrCreatedMsg %j", arrCreatedMsg);
 
-  let mockFn = jest.fn().mockImplementation(async () => {
+  const mockFn = jest.fn().mockImplementation(async () => {
     arrPromiseReceivedMsg = [];
     arrReceivedMsg = [];
     for (let i = 0; i < testTime; i += 1) {
@@ -195,7 +195,7 @@ test("getMessage() should make messages invisible", async () => {
 });
 
 test("total() should return correct number of message", async () => {
-  const testTime : number = 10;
+  const testTime: number = 10;
   const mongoSQMInstance = await setup();
   const arrMsg = [];
   const arrPromiseCreatedMsg = [];
@@ -237,7 +237,7 @@ test("total() should return correct number of message", async () => {
   winston.debug("Number of received Messages %j", numMessage);
 
   for (let i = 0; i < testTime; i += 1) {
-    arrCheck.push(arrMsg.find(obj => obj.a === arrReceivedMsg[i].message.a));
+    arrCheck.push(arrMsg.find((obj) => obj.a === arrReceivedMsg[i].message.a));
   }
   winston.debug("arrCheck %j", arrCheck);
 
@@ -386,7 +386,7 @@ test("updateMessage() should update the message correctly", async () => {
         tries: arrReceivedMsg[j].tries,
       }, {
         $set: {
-          "message.result": arrReceivedMsg[j].message.result
+          "message.result": arrReceivedMsg[j].message.result,
         },
       }));
     }
@@ -395,7 +395,7 @@ test("updateMessage() should update the message correctly", async () => {
 
     /* sleep some time for message available again */
 
-    await repeatIn(5000, 1000, () => {});
+    await repeatIn(5000, 1000, () => { /*do no thing*/ });
   }
 
   for (let i = 0; i < testTime; i += 1) {

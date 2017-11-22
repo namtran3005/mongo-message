@@ -1,11 +1,12 @@
 /* @flow */
-import winston from 'winston'
-import BPromise from 'bluebird'
-import uuidv1 from 'uuid/v1'
+import * as winston from 'winston'
+import * as BPromise from 'bluebird'
+import * as uuid from 'uuid'
 import MongoSMQ from './index'
 
-winston.level = 'debug'
+(winston.level as any) = 'debug'
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000
+const uuidv1 = uuid.v1
 
 export const repeatIn = (ms: number, interval: number, cb: Function) => {
   let countDown = ms
@@ -30,7 +31,7 @@ function getRandomInt (min, max) {
   return Math.floor(Math.random() * ((max - min) + 1)) + min
 }
 
-async function setup (options) {
+async function setup (options?: any) {
   const opts = Object.assign({}, {
     host: 'localhost',
     db: 'abc',
@@ -45,7 +46,7 @@ async function setup (options) {
   return fixtures
 }
 
-async function teardown (fixtures) {
+async function teardown (fixtures: MongoSMQ) {
   return fixtures.deinit()
 }
 
@@ -70,7 +71,7 @@ test('createMessage() method should create new Message', async () => {
     a: 'b',
     c: 'd'
   }
-  const deleteQuery = {}
+  const deleteQuery = {} as any
   const objCreatedMsg = await mongoSQMInstance.createMessage(objMsg)
   if (objCreatedMsg) {
     if (objCreatedMsg.message) {
@@ -335,7 +336,7 @@ test('size() should return current available messages', async () => {
   expect(numinFlight).toBe(randNum)
   winston.debug('Number of inFlight messages %j', numinFlight)
 
-  expect(numSize + numinFlight).toBe(testTime)
+  expect((numSize as number) + (numinFlight as number)).toBe(testTime)
 
   await mongoSQMInstance.clean()
   numMessage = await mongoSQMInstance.total()
@@ -405,3 +406,4 @@ test('updateMessage() should update the message correctly', async () => {
   await mongoSQMInstance.clean()
   await teardown(mongoSQMInstance)
 })
+

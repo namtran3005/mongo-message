@@ -4,6 +4,7 @@ build
 node_modules
 stats.json  
 lib
+dist
 flow-typed
 
 # Cruft

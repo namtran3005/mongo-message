@@ -1,31 +1,33 @@
-/* @flow */
-import BPromise from 'bluebird'
-import mongoose from 'mongoose'
-import EventEmitter from 'events'
+import * as BPromise from 'bluebird'
+import * as mongoose from 'mongoose'
 
-mongoose.Promise = BPromise
+(mongoose as any).Promise = BPromise
 
-type MongoSMQ$options = {
+export type MongoSMQ$options = {
     host?: string,
     db?: string,
     port?: number,
-    options?: mixed,
-    client?: ?string,
+    options?: any,
+    client?: string,
     ns?: string,
     visibility?: number,
-    colName: string,
+    colName?: string,
 };
 
-type MongoSMQ$message = {
+export interface DocumentMessage extends mongoose.Document{
   _id : Object,
-  tries : ?number,
+  tries? : number,
   message : any,
-  visible : ?Object
+  visible : any
 };
 
-type MongoSMQ$updatePayload = {
+export interface HotFixModel extends mongoose.Model<DocumentMessage> {
+  deleteMany(conditions: Object): Promise<{}>
+}
+
+export type MongoSMQ$updatePayload = {
   _id : string,
-  tries : ?number,
+  tries? : number,
   message : any
 };
 
@@ -37,22 +39,20 @@ function nowPlusSecs (secs: number) {
   return (new Date(Date.now() + (secs * 1000))).toISOString()
 }
 
-const { Schema } = mongoose
-const MessageSchema = new Schema({
-  message: Schema.Types.Mixed,
-  visible: Schema.Types.Date,
-  ack: Schema.Types.String,
-  tries: Schema.Types.Number
+const MessageSchema = new mongoose.Schema({
+  message: mongoose.Schema.Types.Mixed,
+  visible: mongoose.Schema.Types.Date,
+  ack: mongoose.Schema.Types.String,
+  tries: mongoose.Schema.Types.Number
 }, {
   timestamps: true
 })
-export default class MongoSMQ extends EventEmitter {
+export default class MongoSMQ {
   options: MongoSMQ$options;
-  mongo: Mongoose$Connection;
-  Message: Class<Mongoose$Model>;
+  mongo: mongoose.Connection;
+  Message: HotFixModel;
 
-  constructor (options: MongoSMQ$options = {}) {
-    super()
+  constructor (options?: MongoSMQ$options) {
     const opts = Object.assign({}, {
       host: 'localhost',
       db: 'mongoSMQ',
@@ -70,7 +70,7 @@ export default class MongoSMQ extends EventEmitter {
     const {
       host = '', port = '', db = '', colName
     } = this.options
-    let theConnection: Mongoose$Connection = await mongoose.createConnection(
+    let theConnection = await mongoose.createConnection(
       `mongodb://${host}:${port}/${db}`,
       {
         useMongoClient: true
@@ -78,25 +78,25 @@ export default class MongoSMQ extends EventEmitter {
     )
     if (theConnection) {
       this.mongo = theConnection
-      this.Message = this.mongo.model(colName, MessageSchema)
+      this.Message = this.mongo.model<DocumentMessage>(colName, MessageSchema) as HotFixModel
     }
     return this
   }
 
-  deinit (): Promise<Mongoose$Connection> {
+  deinit (): Promise<void>{
     return this.mongo.close()
   }
 
-  createMessage (payload: mixed): Promise<MongoSMQ$message> {
+  createMessage (payload?: any): Promise<DocumentMessage> {
     const { Message } = this
     const newMsg = new Message({
       message: payload,
       visible: now()
     })
-    return newMsg.save()
+    return newMsg.save() as Promise<DocumentMessage>;
   }
 
-  getMessage (payload: any, opts: ?{visibility: number}): Promise<MongoSMQ$message> {
+  getMessage (payload?: any, opts?: {visibility: number}): Promise<DocumentMessage> {
     const { Message } = this
     const visibility = (opts && opts.visibility !== undefined)
       ? opts.visibility : this.options.visibility
@@ -116,13 +116,12 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndUpdate(query, update, { sort, new: true }).then()
   }
 
-  updateMessage (query: {_id : string, tries? : ?number},
-    update: any): Promise<MongoSMQ$message> {
+  updateMessage (query: {_id : string, tries? : number}, update: any): Promise<DocumentMessage> {
     const { Message } = this
     return Message.findOneAndUpdate(query, update, { new: true }).then()
   }
 
-  removeMessageById ({ _id, tries }: { _id: string, tries?: ?number }): Promise<mixed> {
+  removeMessageById ({ _id, tries }: { _id: string, tries?: number }): Promise<{}> {
     const { Message } = this
     const query = {
       _id,
@@ -138,12 +137,12 @@ export default class MongoSMQ extends EventEmitter {
     return Message.findOneAndRemove(query).then()
   }
 
-  total (): Promise<number> {
+  total (): Promise<{}> {
     const { Message } = this
-    return Message.count().then()
+    return Message.count({}).then()
   }
 
-  size (): Promise<number> {
+  size (): Promise<{}> {
     const { Message } = this
     const query = {
       visible: { $lte: now() }
@@ -151,7 +150,7 @@ export default class MongoSMQ extends EventEmitter {
     return Message.count(query).then()
   }
 
-  inFlight (): Promise<number> {
+  inFlight (): Promise<{}> {
     const { Message } = this
     const query = {
       tries: { $exists: true },
@@ -160,8 +159,8 @@ export default class MongoSMQ extends EventEmitter {
     return Message.count(query).then()
   }
 
-  clean (): Promise<{ "acknowledged" : boolean, "deletedCount" : number }> {
+  clean (): Promise<{}> {
     const { Message } = this
-    return Message.deleteMany().then()
+    return Message.deleteMany({}).then()
   }
 }

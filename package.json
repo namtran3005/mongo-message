@@ -2,12 +2,14 @@
   "name": "mongo-message",
   "version": "0.0.21",
   "description": "Using mongo as message queue",
-  "main": "lib/index.js",
-  "jsnext:main": "lib/index.js",
+  "jsnext:main": "dist/index",
+  "main": "dist/index",
+  "types": "dist/index",
   "scripts": {
     "build": "babel src --out-dir lib && ./node_modules/.bin/flow-copy-source src lib",
-    "test": "./node_modules/.bin/jest --coverage src/*.test.js",
-    "prepublish": "npm run build"
+    "buildts": "./node_modules/.bin/tsc",
+    "test": "./node_modules/.bin/jest --coverage src/*.test.ts",
+    "prepublish": "npm run buildts"
   },
   "authors": [
     "Tran Hoai Nam <ntran.picom@gmail.com> (https://github.com/namtran3005)"
@@ -20,6 +22,12 @@
     "winston": "^2.3.1"
   },
   "devDependencies": {
+    "@types/bluebird": "^3.5.18",
+    "@types/jest": "^21.1.6",
+    "@types/mongoose": "^4.7.27",
+    "@types/node": "^8.0.53",
+    "@types/uuid": "^3.4.3",
+    "@types/winston": "^2.3.7",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.0.1",
@@ -28,27 +36,31 @@
     "babel-preset-env": "^1.6.1",
     "babel-preset-flow": "^6.23.0",
     "babel-preset-stage-0": "^6.24.1",
-    "eslint": "^4.8.0",
+    "eslint": "^4.10.0",
     "eslint-config-airbnb-base": "^12.0.0",
     "eslint-plugin-flowtype": "^2.39.1",
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-jest": "^21.2.0",
-    "flow-bin": "^0.57.3",
+    "flow-bin": "^0.58.0",
     "flow-copy-source": "^1.2.1",
-    "flow-typed": "^2.2.0",
+    "flow-typed": "^2.2.3",
     "jest": "^21.2.1",
-    "standard": "^10.0.3"
+    "standard": "^10.0.3",
+    "ts-jest": "^21.2.3",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.6.1"
   },
-  "standard": {
-    "parser": "babel-eslint",
-    "plugins": [
-      "flowtype"
-    ],
-    "env": [
-      "jest"
-    ],
-    "globals": [
-      "jasmine"
+  "jest": {
+    "transform": {
+      "^.+\\.ts?$": "ts-jest"
+    },
+    "testRegex": "(/src/.*\\.(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
     ]
   },
   "repository": "git@github.com:namtran3005/mongo-message.git",

@@ -295,7 +295,7 @@ test("clean() should empty the db", async () => {
 });
 
 test("size() should return current available messages", async () => {
-  const testTime : number = 20;
+  const testTime: number = 20;
   const mongoSQMInstance = await setup();
   const arrMsg = [];
   const arrPromiseCreatedMsg = [];

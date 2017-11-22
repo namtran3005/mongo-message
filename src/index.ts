@@ -1,166 +1,167 @@
-import * as BPromise from 'bluebird'
-import * as mongoose from 'mongoose'
+import * as BPromise from "bluebird";
+import * as mongoose from "mongoose";
 
-(mongoose as any).Promise = BPromise
+(mongoose as any).Promise = BPromise;
 
-export type MongoSMQ$options = {
-    host?: string,
-    db?: string,
-    port?: number,
-    options?: any,
-    client?: string,
-    ns?: string,
-    visibility?: number,
-    colName?: string,
-};
-
-export interface DocumentMessage extends mongoose.Document{
-  _id : Object,
-  tries? : number,
-  message : any,
-  visible : any
-};
-
-export interface HotFixModel extends mongoose.Model<DocumentMessage> {
-  deleteMany(conditions: Object): Promise<{}>
+export interface IMongoSMQ$options {
+    host?: string;
+    db?: string;
+    port?: number;
+    options?: any;
+    client?: string;
+    ns?: string;
+    visibility?: number;
+    colName?: string;
 }
 
-export type MongoSMQ$updatePayload = {
-  _id : string,
-  tries? : number,
-  message : any
-};
-
-function now () {
-  return (new Date()).toISOString()
+export interface IDocumentMessage extends mongoose.Document {
+  _id: {};
+  tries?: number;
+  message: any;
+  visible: any;
 }
 
-function nowPlusSecs (secs: number) {
-  return (new Date(Date.now() + (secs * 1000))).toISOString()
+export interface IHotFixModel extends mongoose.Model<IDocumentMessage> {
+  deleteMany(conditions: {}): Promise<{}>;
+}
+
+export interface IMongoSMQ$updatePayload {
+  _id: string;
+  tries?: number;
+  message: any;
+}
+
+function now() {
+  return (new Date()).toISOString();
+}
+
+function nowPlusSecs(secs: number) {
+  return (new Date(Date.now() + (secs * 1000))).toISOString();
 }
 
 const MessageSchema = new mongoose.Schema({
-  message: mongoose.Schema.Types.Mixed,
-  visible: mongoose.Schema.Types.Date,
   ack: mongoose.Schema.Types.String,
-  tries: mongoose.Schema.Types.Number
+  message: mongoose.Schema.Types.Mixed,
+  tries: mongoose.Schema.Types.Number,
+  visible: mongoose.Schema.Types.Date,
 }, {
-  timestamps: true
-})
-export default class MongoSMQ {
-  options: MongoSMQ$options;
-  mongo: mongoose.Connection;
-  Message: HotFixModel;
+  timestamps: true,
+});
 
-  constructor (options?: MongoSMQ$options) {
+export default class MongoSMQ {
+  public options: IMongoSMQ$options;
+  public mongo: mongoose.Connection;
+  public Message: IHotFixModel;
+
+  constructor(options?: IMongoSMQ$options) {
     const opts = Object.assign({}, {
-      host: 'localhost',
-      db: 'mongoSMQ',
+      host: "localhost",
+      db: "mongoSMQ",
       port: 27017,
       options: {},
       client: null,
-      ns: 'rsmq',
+      ns: "rsmq",
       visibility: 30,
-      colName: 'SMQMessage'
-    }, options)
-    this.options = opts
+      colName: "SMQMessage",
+    }, options);
+    this.options = opts;
   }
 
-  async init () {
+  public async init() {
     const {
-      host = '', port = '', db = '', colName
-    } = this.options
-    let theConnection = await mongoose.createConnection(
+      host = "", port = "", db = "", colName,
+    } = this.options;
+    const theConnection = await mongoose.createConnection(
       `mongodb://${host}:${port}/${db}`,
       {
-        useMongoClient: true
-      }
-    )
+        useMongoClient: true,
+      },
+    );
     if (theConnection) {
-      this.mongo = theConnection
-      this.Message = this.mongo.model<DocumentMessage>(colName, MessageSchema) as HotFixModel
+      this.mongo = theConnection;
+      this.Message = this.mongo.model<IDocumentMessage>(colName, MessageSchema) as IHotFixModel;
     }
-    return this
+    return this;
   }
 
-  deinit (): Promise<void>{
-    return this.mongo.close()
+  public deinit(): Promise<void> {
+    return this.mongo.close();
   }
 
-  createMessage (payload?: any): Promise<DocumentMessage> {
-    const { Message } = this
+  public createMessage(payload?: any): Promise<IDocumentMessage> {
+    const { Message } = this;
     const newMsg = new Message({
       message: payload,
-      visible: now()
-    })
-    return newMsg.save() as Promise<DocumentMessage>;
+      visible: now(),
+    });
+    return newMsg.save() as Promise<IDocumentMessage>;
   }
 
-  getMessage (payload?: any, opts?: {visibility: number}): Promise<DocumentMessage> {
-    const { Message } = this
+  public getMessage(payload?: any, opts?: {visibility: number}): Promise<IDocumentMessage> {
+    const { Message } = this;
     const visibility = (opts && opts.visibility !== undefined)
-      ? opts.visibility : this.options.visibility
+      ? opts.visibility : this.options.visibility;
     const query = Object.assign({
-      visible: { $lte: now() }
-    }, payload)
+      visible: { $lte: now() },
+    }, payload);
     const sort = {
       _id: 1,
-      visible: 1
-    }
+      visible: 1,
+    };
     const update = {
       $inc: { tries: 1 },
       $set: {
-        visible: nowPlusSecs(visibility || 0)
-      }
-    }
-    return Message.findOneAndUpdate(query, update, { sort, new: true }).then()
+        visible: nowPlusSecs(visibility || 0),
+      },
+    };
+    return Message.findOneAndUpdate(query, update, { sort, new: true }).then();
   }
 
-  updateMessage (query: {_id : string, tries? : number}, update: any): Promise<DocumentMessage> {
-    const { Message } = this
-    return Message.findOneAndUpdate(query, update, { new: true }).then()
+  public updateMessage(query: {_id: string, tries?: number}, update: any): Promise<IDocumentMessage> {
+    const { Message } = this;
+    return Message.findOneAndUpdate(query, update, { new: true }).then();
   }
 
-  removeMessageById ({ _id, tries }: { _id: string, tries?: number }): Promise<{}> {
-    const { Message } = this
+  public removeMessageById({ _id, tries }: { _id: string, tries?: number }): Promise<{}> {
+    const { Message } = this;
     const query = {
       _id,
-      tries
-    }
+      tries,
+    };
     /* For tries value,
     ** If it null we mean we looking for object with tries property is null or not exist
     ** If it undefined we mean we don't care about value of tries when find
     */
     if (tries === undefined) {
-      delete query.tries
+      delete query.tries;
     }
-    return Message.findOneAndRemove(query).then()
+    return Message.findOneAndRemove(query).then();
   }
 
-  total (): Promise<{}> {
-    const { Message } = this
-    return Message.count({}).then()
+  public total(): Promise<{}> {
+    const { Message } = this;
+    return Message.count({}).then();
   }
 
-  size (): Promise<{}> {
-    const { Message } = this
+  public size(): Promise<{}> {
+    const { Message } = this;
     const query = {
-      visible: { $lte: now() }
-    }
-    return Message.count(query).then()
+      visible: { $lte: now() },
+    };
+    return Message.count(query).then();
   }
 
-  inFlight (): Promise<{}> {
-    const { Message } = this
+  public inFlight(): Promise<{}> {
+    const { Message } = this;
     const query = {
       tries: { $exists: true },
-      visible: { $gt: now() }
-    }
-    return Message.count(query).then()
+      visible: { $gt: now() },
+    };
+    return Message.count(query).then();
   }
 
-  clean (): Promise<{}> {
-    const { Message } = this
-    return Message.deleteMany({}).then()
+  public clean(): Promise<{}> {
+    const { Message } = this;
+    return Message.deleteMany({}).then();
   }
 }

@@ -55,14 +55,14 @@ export default class MongoSMQ {
 
   constructor(options?: IMongoSMQ$options) {
     const opts = Object.assign({}, {
-      host: "localhost",
-      db: "mongoSMQ",
-      port: 27017,
-      options: {},
       client: null,
-      ns: "rsmq",
-      visibility: 30,
       colName: "SMQMessage",
+      db: "mongoSMQ",
+      host: "localhost",
+      ns: "rsmq",
+      options: {},
+      port: 27017,
+      visibility: 30,
     }, options);
     this.options = opts;
   }

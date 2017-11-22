@@ -140,7 +140,7 @@ test("getMessage() method should get some message", async () => {
 });
 
 test("getMessage() should make messages invisible", async () => {
-  const testTime : number = 10;
+  const testTime: number = 10;
   const mongoSQMInstance = await setup({
     visibility: 10,
   });
@@ -272,7 +272,7 @@ test("clean() should empty the db", async () => {
   }
   winston.debug("Object will created: %j", arrMsg);
 
-  let numMessage = await mongoSQMInstance.total()
+  let numMessage = await mongoSQMInstance.total();
   winston.debug("Number of Initiate Messages %j", numMessage);
   expect(numMessage).toBe(0);
 

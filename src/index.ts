@@ -21,10 +21,6 @@ export interface IDocumentMessage extends mongoose.Document {
   visible: any;
 }
 
-export interface IHotFixModel extends mongoose.Model<IDocumentMessage> {
-  deleteMany(conditions: {}): Promise<{}>;
-}
-
 export interface IMongoSMQ$updatePayload {
   _id: string;
   tries?: number;
@@ -51,7 +47,7 @@ const MessageSchema = new mongoose.Schema({
 export default class MongoSMQ {
   public options: IMongoSMQ$options;
   public mongo: mongoose.Connection;
-  public Message: IHotFixModel;
+  public Message: mongoose.Model<IDocumentMessage>;
 
   constructor(options?: IMongoSMQ$options) {
     const opts = Object.assign({}, {
@@ -73,13 +69,10 @@ export default class MongoSMQ {
     } = this.options;
     const theConnection = await mongoose.createConnection(
       `mongodb://${host}:${port}/${db}`,
-      {
-        useMongoClient: true,
-      },
     );
     if (theConnection) {
       this.mongo = theConnection;
-      this.Message = this.mongo.model<IDocumentMessage>(colName, MessageSchema) as IHotFixModel;
+      this.Message = this.mongo.model<IDocumentMessage>(colName, MessageSchema);
     }
     return this;
   }

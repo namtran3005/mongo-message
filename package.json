@@ -16,22 +16,22 @@
   "license": "MIT",
   "dependencies": {
     "bluebird": "^3.5.1",
-    "mongoose": "^4.12.1",
-    "uuid": "^3.1.0",
-    "winston": "^2.3.1"
+    "mongoose": "^5.1.1",
+    "uuid": "^3.2.1",
+    "winston": "^2.4.2"
   },
   "devDependencies": {
-    "@types/bluebird": "^3.5.18",
-    "@types/jest": "^21.1.6",
-    "@types/mongoose": "^4.7.27",
-    "@types/node": "^8.0.53",
+    "@types/bluebird": "^3.5.20",
+    "@types/jest": "^22.2.3",
+    "@types/mongoose": "^5.0.14",
+    "@types/node": "^10.1.1",
     "@types/uuid": "^3.4.3",
-    "@types/winston": "^2.3.7",
-    "jest": "^21.2.1",
-    "ts-jest": "^21.2.3",
-    "ts-node": "^3.3.0",
-    "tslint": "^5.8.0",
-    "typescript": "^2.6.1"
+    "@types/winston": "^2.3.9",
+    "jest": "^22.4.3",
+    "ts-jest": "^22.4.6",
+    "ts-node": "^6.0.3",
+    "tslint": "^5.10.0",
+    "typescript": "^2.8.3"
   },
   "jest": {
     "transform": {

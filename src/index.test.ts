@@ -59,7 +59,7 @@ test("Initiate new MongoSMQ should throw error", async (done) => {
   try {
     await (new MongoSMQ({ port: 27015 })).init();
   } catch (e) {
-    expect(e.name).toBe("MongoError");
+    expect(e.name).toBe("MongoNetworkError");
     done();
   }
 });
